@@ -186,3 +186,51 @@ server {
 3.  Remove the test file once you have confirmed that the stack is working correctly:
 
         sudo rm /var/www/example.com/test.php
+        
+        
+## Troubleshooting
+If everything is running and you're still experiencing problems accessing your website, check out these steps to help determine the cause.
+
+###  Experiencing errors reaching your website?
+
+#### 'Site cannot be reached'
+
+When visiting your site, if you see *'This site can't be reached', 'Permission Denied' or 'Connection Refused'*, or similar errors, it is possible that your Port 80 connection is closed.  To check on this, you can check your iptable settings by running:<br><br>
+
+```sudo iptables -nL | grep 80``` <br><br>
+
+If you see no output from this command, it means that Port 80 is in fact closed.
+
+Run the following command to <b>Open Port 80</b>:<br><br>
+```sudo iptables -I INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT```
+
+For more on iptables, check out: [Controlling Network Traffic with iptables](https://www.linode.com/docs/security/firewalls/control-network-traffic-with-iptables/).
+
+####If you see an error in your browser window stating "No input file specified":
+
+This is a common issue when installing nginx with Centos, and it is useful to check through the <b>Nginx error logs</b>.
+
+These are located in ```/var/log/nginx/error.log```
+<br>
+To print the last 20 lines of the file from your terminal, run:
+```tail -n 20 /var/log/nginx/error.log```<br>
+
+If you see the following error message in your log:
+
+ 
+```FastCGI sent in stderr: "Unable to open primary script: /var/www/example.com/test.php (No such file or directory)"```
+
+This indicates that you Nginx is unable to find the test.php file likely due to  <b>SELinux</b> default settings. SELinux defines how applications and users can access different files, devices, networks, and more.
+<br><br>
+In this case, you can make the SELinux exception by running:
+```
+setsebool -P httpd_can_network_connect_db 1
+setsebool -P httpd_can_network_connect 1
+```
+
+These commands will allow MariaDB and the network to connect with Nginx.  To apply the new exceptions, run the following:<br><br>
+```restorecon -R -v /var/www```
+
+There is more information here on [Using SELinux](https://linode.com/docs/security/getting-started-with-selinux/).
+    
+
